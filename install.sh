@@ -18,6 +18,7 @@ if [ $myhost != "192.168.1.100" ]; then
     hostname 192.168.1.100
 fi
 
+echo "#### Start ETCD service ####"
 if ETCDCTL_API=3 etcdctl member list; then
     echo "etcd service up and running skipping "
 else
@@ -169,11 +170,29 @@ else
 
 fi
 
-
 echo "####Setup flannel for pod networking####"
-curl -o kube-flannel.yml  -sSL https://rawgit.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
-kubectl  create -f  kube-flannel.yml
+kubectl get ds kube-flannel-ds -n kube-system
+if [ $? -eq 0 ]; then
+    echo "#### Flannel already deployed skipping#####"
+else
+    if [ ! -f kube-flannel.yml ]; then
+        curl -o kube-flannel.yml  -sSL https://rawgit.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
+        if [ $? -ne 0 ]; then
+            echo "Failed to download kube-flannel.yml "
+            exit -1
+        fi
+    fi
+    kubectl  create -f  kube-flannel.yml
+fi
 
-kubectl run my-nginx --image=nginx --replicas=2 --port=80
-kubectl expose deployment my-nginx --port=80
 
+echo "##### Deploy one sample application #######"
+kubectl get deploy my-nginx
+if [ $? -eq 0 ]; then
+    echo "#### Sample app nginx already deployed skipping#####"
+else
+
+    kubectl run my-nginx --image=nginx --replicas=2 --port=80
+    kubectl expose deployment my-nginx --port=80
+fi 
+kubectl get svc my-nginx 

@@ -44,7 +44,7 @@ if [ ! -f ./${output}.pem ]; then
     sed s/Kubernetes/CA/ csr-template.json | \
         sed s/CN_VALUE/Kubernetes/ | \
         sed s/O_VLAUE/Kubernetes/ >  ${output}-csr.json
-    cfssl gencert -initca ca-csr.json | cfssljson -bare ca
+    cfssl gencert -initca ${output}-csr.json | cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
         echo "Failed to create root certificate"
         exit -1
@@ -61,8 +61,8 @@ if [ ! -f ./${output}.pem ]; then
         -ca=ca.pem \
         -ca-key=ca-key.pem \
         -config=ca-config.json \
-        -profile=kubernetes admin-csr.json | \
-        cfssljson -bare admin
+        -profile=kubernetes ${output}-csr.json | \
+        cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $output certificate"
         exit -1
@@ -78,8 +78,8 @@ if [ ! -f ./${output}.pem ]; then
     cfssl gencert \
         -ca=ca.pem -ca-key=ca-key.pem \
         -config=ca-config.json \
-        -profile=kubernetes kube-proxy-csr.json | \
-        cfssljson -bare kube-proxy
+        -profile=kubernetes ${output}-csr.json | \
+        cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $output certificate"
         exit -1
@@ -96,8 +96,8 @@ if [ ! -f ./${output}.pem ]; then
         -ca-key=ca-key.pem \
         -config=ca-config.json \
         -hostname=192.168.1.100,192.168.1.100 \
-        -profile=kubernetes 192.168.1.100-csr.json | \
-        cfssljson -bare 192.168.1.100
+        -profile=kubernetes ${output}-csr.json | \
+        cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $ouput certificate"
         exit -1
@@ -116,8 +116,8 @@ if [ ! -f ./${output}.pem ]; then
         -ca-key=ca-key.pem \
         -config=ca-config.json \
         -hostname=10.32.0.1,192.168.1.100,127.0.0.1,kubernetes.default \
-        -profile=kubernetes kubernetes-csr.json | \
-        cfssljson -bare kubernetes
+        -profile=kubernetes ${output}-csr.json | \
+        cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $ouput certificate"
         exit -1
