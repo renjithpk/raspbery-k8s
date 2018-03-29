@@ -12,6 +12,11 @@ cp -P services/etcd.service \
     services/kube-proxy.service configs
 cd configs
 
+myhost=$(hostname)
+if [ $myhost != "192.168.1.100" ]; then
+    echo "hostname not set, setting...."
+    hostname 192.168.1.100
+fi
 
 if ETCDCTL_API=3 etcdctl member list; then
     echo "etcd service up and running skipping "
@@ -91,7 +96,7 @@ else
     fi
 fi
 
-
+echo "#### copy kubeconfig for kubectl #### "
 cp admin-config.kubeconfig ~/.kube/config
 sleep 1
 kubectl get componentstatuses
@@ -168,3 +173,7 @@ fi
 echo "####Setup flannel for pod networking####"
 curl -o kube-flannel.yml  -sSL https://rawgit.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
 kubectl  create -f  kube-flannel.yml
+
+kubectl run my-nginx --image=nginx --replicas=2 --port=80
+kubectl expose deployment my-nginx --port=80
+

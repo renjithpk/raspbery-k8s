@@ -86,7 +86,8 @@ cleanup_files()
 
 if [ $STOP == "YES" ]  ; then
     echo "Stop services"
-    systemctl stop etcd kube-apiserver kube-controller-manager kube-scheduler containerd cri-containerd kube-proxy 
+    systemctl stop etcd kube-apiserver kube-controller-manager kube-scheduler  kube-proxy kubelet
+    systemctl stop etcd containerd cri-containerd
 fi
 
 if [ $CLEANUP == "YES" ]  ; then
