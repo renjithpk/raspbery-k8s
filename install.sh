@@ -12,11 +12,8 @@ cp -P services/etcd.service \
     services/kube-proxy.service configs
 cd configs
 
-myhost=$(hostname)
-if [ $myhost != "192.168.1.100" ]; then
-    echo "hostname not set, setting...."
-    hostname 192.168.1.100
-fi
+node=$(hostname)
+node_ip=192.168.1.100
 
 echo "#### Start ETCD service ####"
 if ETCDCTL_API=3 etcdctl member list; then
@@ -45,7 +42,7 @@ fi
 
 
 echo "####### Start API server ########"
-ps -e |grep -v grep |grep kube-apiserver > /dev/null 
+systemctl status --no-pager kube-apiserver > /dev/null 
 if [ $? -eq 0 ]; then
     echo "API server is alreay up, skipping..."
 else
@@ -60,7 +57,13 @@ else
 
     cp -P kube-apiserver.service /etc/systemd/system/
     systemctl daemon-reload
-    systemctl start kube-apiserver #kube-controller-manager kube-scheduler
+    systemctl start kube-apiserver 
+    sleep 1
+    ps -e |grep -v grep |grep kube-apiserver > /dev/null
+    if [ $? -ne 0 ]; then
+        echo "Error kube-apiserver service is not up..."
+        exit -1
+    fi
 fi
 
 echo "####### Start kube-controller-manager.service server ########"
@@ -114,20 +117,20 @@ if ! kubectl get ClusterRoleBinding system:kube-apiserver; then
     kubectl create -f kube-apiserver-to-kubelet-bind.yaml
 fi
 
-if curl --silent --cacert ca.pem https://192.168.1.100:6443/version|grep platform; then
+if curl --silent --cacert ca.pem https://${node_ip}:6443/version|grep platform; then
     echo "I could talk Successfully to API server "
 else
     echo "ERROR could not talk to API server "
     exit -1
 fi
+
 echo "start cni service"
-ps -e |grep -v grep |grep containerd > /dev/null
-if [ $? -eq 0 ]; then
+if [ -f /run/containerd/containerd.sock ]; then
     echo "containerd service is alreay up, skipping..."
 else
     cp -P 10-bridge.conf /etc/cni/net.d/
     cp -P 99-loopback.conf /etc/cni/net.d/
-    systemctl start containerd cri-containerd
+    systemctl restart containerd cri-containerd
 fi
 
 
@@ -137,8 +140,8 @@ if [ $? -eq 0 ]; then
     echo "kubelet service is alreay up, skipping..."
 else
     cp -P kubelet.service /etc/systemd/system/
-    cp -P 192.168.1.100-key.pem 192.168.1.100.pem /var/lib/kubelet
-    cp -P 192.168.1.100.kubeconfig /var/lib/kubelet/kubeconfig
+    cp -P ${node}-key.pem ${node}.pem /var/lib/kubelet
+    cp -P ${node}.kubeconfig /var/lib/kubelet/kubeconfig
     swapoff -a
     systemctl daemon-reload
     systemctl start kubelet

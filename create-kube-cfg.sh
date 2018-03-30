@@ -1,13 +1,14 @@
-mkdir -p configs
+./create-cert.sh
 cd configs
 
-node=192.168.1.100
+node=$(hostname)
+node_ip=192.168.1.100
 
 echo "####### Generate kubeconfig file for the kubelets  ########"
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
-    --server=https://${node}:6443 \
+    --server=https://${node_ip}:6443 \
     --kubeconfig=${node}.kubeconfig
 kubectl config set-credentials system:node:${node} \
     --client-certificate=${node}.pem \
@@ -26,7 +27,7 @@ echo "####### Generate the kubeconfig file for the kube-proxies  #####"
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
-    --server=https://${node}:6443 \
+    --server=https://${node_ip}:6443 \
     --kubeconfig=kube-proxy.kubeconfig
 kubectl config set-credentials kube-proxy \
     --client-certificate=kube-proxy.pem \
@@ -43,7 +44,7 @@ echo "####### Generate the kubeconfig file for the kubectl admin  #####"
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
-    --server=https://192.168.1.100:6443 \
+    --server=https://${node_ip}:6443 \
     --kubeconfig=admin-config.kubeconfig
 kubectl config set-credentials admin \
     --client-certificate=admin.pem \
@@ -56,19 +57,3 @@ kubectl config set-context kubernetes \
 kubectl config use-context kubernetes \
     --kubeconfig=admin-config.kubeconfig
 
-
-echo "######  Generate the data encryption key for   #####"
-ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
-cat > encryption-config.yaml << EOF
-kind: EncryptionConfig
-apiVersion: v1
-resources:
-  - resources:
-      - secrets
-    providers:
-      - aescbc:
-          keys:
-            - name: key1
-              secret: ${ENCRYPTION_KEY}
-      - identity: {}
-EOF

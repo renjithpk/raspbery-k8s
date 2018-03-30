@@ -1,5 +1,6 @@
 #!/bin/bash
-node=192.168.1.100
+node=$(hostname) 
+node_ip=192.168.1.100
 mkdir -p configs
 cd configs
 cat > ca-config.json << EOF
@@ -49,6 +50,8 @@ if [ ! -f ./${output}.pem ]; then
         echo "Failed to create root certificate"
         exit -1
     fi
+else
+    echo " skipping ${output}.pem"
 fi
 
 
@@ -67,6 +70,8 @@ if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $output certificate"
         exit -1
     fi
+else
+    echo " skipping ${output}.pem"
 fi
 
 
@@ -84,6 +89,8 @@ if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $output certificate"
         exit -1
     fi
+else
+    echo " skipping ${output}.pem"
 fi
 
 output=$node
@@ -95,33 +102,57 @@ if [ ! -f ./${output}.pem ]; then
         -ca=ca.pem \
         -ca-key=ca-key.pem \
         -config=ca-config.json \
-        -hostname=192.168.1.100,192.168.1.100 \
+        -hostname=${node},${node_ip} \
         -profile=kubernetes ${output}-csr.json | \
         cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $ouput certificate"
         exit -1
     fi
+else
+    echo " skipping ${output}.pem"
 fi
 
 
 
 output=kubernetes
 if [ ! -f ./${output}.pem ]; then
-    echo "########   Preapre kubelet $output certificate ###########"
+    echo "########   Preapre kubernetes api server $output certificate ###########"
     sed s/CN_VALUE/${output}/ csr-template.json | \
         sed s/O_VLAUE/Kubernetes/  > ${output}-csr.json
     cfssl gencert \
         -ca=ca.pem \
         -ca-key=ca-key.pem \
         -config=ca-config.json \
-        -hostname=10.32.0.1,192.168.1.100,127.0.0.1,kubernetes.default \
+        -hostname=10.32.0.1,${node_ip},127.0.0.1,kubernetes.default \
         -profile=kubernetes ${output}-csr.json | \
         cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
         echo "Failed to create $ouput certificate"
         exit -1
     fi
+else
+    echo " skipping ${output}.pem"
+fi
+
+if [ ! -f encryption-config.yaml ]; then
+    echo "######  Generate the data encryption key   #####"
+    ENCRYPTION_KEY=$(head -c 32 /dev/urandom | base64)
+cat > encryption-config.yaml << EOF
+kind: EncryptionConfig
+apiVersion: v1
+resources:
+  - resources:
+      - secrets
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              secret: ${ENCRYPTION_KEY}
+      - identity: {}
+EOF
+else
+    echo " skipping encryption-config.yaml"
 fi
 
 cd ../
