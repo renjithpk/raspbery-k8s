@@ -3,6 +3,7 @@
 POSITIONAL=()
 CLEANUP=NO
 STOP=NO
+STATUS=NO
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -18,7 +19,14 @@ case $key in
     shift # past argument
     #shift # past value
     ;;
+    --status)
+    STATUS=YES
+    shift # past argument
+    #shift # past value
+    ;;
     *)    # unknown option
+    echo "Invalid option ${key}"
+    echo "helper-tools.sh [-c|--cleanup] [-s|--stop-services] [--status]"
     POSITIONAL+=("$1") # save it in an array for later
     shift # past argument
     ;;
@@ -64,7 +72,7 @@ cleanup_files()
         /var/lib/kubelet \
         /var/lib/kube-proxy \
         /var/lib/kubernetes \
-        /var/run/kubernetes
+        #/var/run/kubernetes
 
 
     rm -r /opt/cri-containerd/ \
@@ -95,3 +103,10 @@ if [ $CLEANUP == "YES" ]  ; then
     cleanup_files
 fi
 
+if [ $STATUS == "YES" ]  ; then
+    echo "Checking service status"
+    for svc in etcd kube-apiserver kube-controller-manager kube-scheduler containerd cri-containerd kubelet kube-proxy
+    do
+        systemctl status --lines=0 --no-pager $svc
+    done
+fi

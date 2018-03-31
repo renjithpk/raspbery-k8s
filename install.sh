@@ -20,6 +20,8 @@ if ETCDCTL_API=3 etcdctl member list; then
     echo "etcd service up and running skipping "
 else
     mkdir -p /etc/etcd /var/lib/etcd
+    # cleanup if any pre existing data
+    rm -r /var/lib/etcd/*
     cp ca.pem kubernetes-key.pem kubernetes.pem /etc/etcd/
     if [ $? -ne 0 ]; then
 
@@ -124,7 +126,7 @@ else
     exit -1
 fi
 
-echo "start cni service"
+echo "###### start cni service####"
 if [ -f /run/containerd/containerd.sock ]; then
     echo "containerd service is alreay up, skipping..."
 else
@@ -140,6 +142,7 @@ if [ $? -eq 0 ]; then
     echo "kubelet service is alreay up, skipping..."
 else
     cp -P kubelet.service /etc/systemd/system/
+    mkdir -p /var/lib/kubelet
     cp -P ${node}-key.pem ${node}.pem /var/lib/kubelet
     cp -P ${node}.kubeconfig /var/lib/kubelet/kubeconfig
     swapoff -a

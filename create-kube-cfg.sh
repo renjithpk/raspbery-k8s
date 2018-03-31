@@ -5,6 +5,7 @@ node=$(hostname)
 node_ip=192.168.1.100
 
 echo "####### Generate kubeconfig file for the kubelets  ########"
+rm ${node}.kubeconfig
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
@@ -24,6 +25,7 @@ kubectl config use-context default --kubeconfig=${node}.kubeconfig
 
 
 echo "####### Generate the kubeconfig file for the kube-proxies  #####"
+rm kube-proxy.kubeconfig
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
@@ -41,6 +43,7 @@ kubectl config set-context default \
 kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
 
 echo "####### Generate the kubeconfig file for the kubectl admin  #####"
+rm admin-config.kubeconfig
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
