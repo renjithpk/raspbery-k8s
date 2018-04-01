@@ -24,6 +24,7 @@ if [ $? -ne 0 ]; then
 fi
 touch downloaded
 
+echo "### install cfss binaries ##"
 chmod +x cfssl_linux-amd64 cfssljson_linux-amd64 && \
 sudo cp -P cfssl_linux-amd64 /usr/local/bin/cfssl && \
 sudo cp -P  cfssljson_linux-amd64 /usr/local/bin/cfssljson
@@ -32,6 +33,7 @@ if [ $? -ne 0 ]; then
    exit -1
 fi
 
+echo "### install kubernetes  binaries ##"
 chmod +x \
 kube-apiserver \
 kube-controller-manager \
@@ -60,6 +62,7 @@ if [ $? -ne 0 ]; then
 fi
 
 
+echo "### install etcd  binaries ##"
 
 tar xvzf etcd-v3.2.11-linux-amd64.tar.gz > /dev/null && \
 mv etcd-v3.2.11-linux-amd64/etcd* /usr/local/bin/
