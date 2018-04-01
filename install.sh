@@ -2,9 +2,9 @@
 
 NODE_NAME=$(hostname)
 NODE_IP=192.168.1.100
+MASTER_NODE=YES
 
-
-echo "### Copy Node service and config files"
+echo $'\n#### Copy Node service and config files'
 cp -P services/10-bridge.conf \
     services/99-loopback.conf \
     services/kubelet.service \
@@ -14,17 +14,17 @@ if [ $MASTER_NODE ]; then
         services/kube-controller-manager.service \
         services/kube-apiserver-to-kubelet.yaml \
         services/kube-apiserver-to-kubelet-bind.yaml \
-        services/kube-scheduler.service configs
-    services/etcd.service configs
+        services/kube-scheduler.service  \
+        services/etcd.service configs
 fi
 cd configs
 
-echo "#### copy kubeconfig for kubectl #### "
+echo $'\n#### copy kubeconfig for kubectl ###'
 cp admin-config.kubeconfig ~/.kube/config
 
 if [ $MASTER_NODE ]; then
-    echo "###### Start ETCD service ######"
-    if ETCDCTL_API=3 etcdctl member list; then
+    echo $'\n#### Start ETCD service ##'
+    if ETCDCTL_API=3 etcdctl member list > /dev/null; then
         echo "etcd service up and running skipping "
     else
         mkdir -p /etc/etcd /var/lib/etcd
@@ -50,8 +50,8 @@ if [ $MASTER_NODE ]; then
         fi
     fi
 
-    echo "####### Start API server ########"
-    systemctl status --no-pager kube-apiserver > /dev/null 
+    echo $'\n#### Start API server ####'
+    systemctl status --no-pager kube-apiserver > /dev/null
     if [ $? -eq 0 ]; then
         echo "API server is alreay up, skipping..."
     else
@@ -66,7 +66,7 @@ if [ $MASTER_NODE ]; then
 
         cp -P kube-apiserver.service /etc/systemd/system/
         systemctl daemon-reload
-        systemctl start kube-apiserver 
+        systemctl start kube-apiserver
         sleep 1
         ps -e |grep -v grep |grep kube-apiserver > /dev/null
         if [ $? -ne 0 ]; then
@@ -75,7 +75,7 @@ if [ $MASTER_NODE ]; then
         fi
     fi
 
-    echo "####### Start kube-controller-manager.service server ########"
+    echo $'\n#### Start kube-controller-manager.service server ####'
     ps -e |grep -v grep |grep kube-controller > /dev/null
     if [ $? -eq 0 ]; then
         echo "kube-controller-manager service  is alreay up, skipping..."
@@ -93,7 +93,7 @@ if [ $MASTER_NODE ]; then
     fi
 
 
-    echo "####### Start kube-scheduler service ########"
+    echo $'\n#### Start kube-scheduler service ####'
     ps -e |grep -v grep |grep kube-scheduler > /dev/null
     if [ $? -eq 0 ]; then
         echo "kube-scheduler service is alreay up, skipping..."
@@ -114,11 +114,11 @@ if [ $MASTER_NODE ]; then
         echo "All kube componensts are not up"
         exit -1
     fi
-    if ! kubectl get clusterroles system:kube-apiserver-to-kubelet; then
+    if ! kubectl get clusterroles system:kube-apiserver-to-kubelet > /dev/null; then
         kubectl create -f kube-apiserver-to-kubelet.yaml
     fi
 
-    if ! kubectl get ClusterRoleBinding system:kube-apiserver; then
+    if ! kubectl get ClusterRoleBinding system:kube-apiserver > /dev/null; then
         kubectl create -f kube-apiserver-to-kubelet-bind.yaml
     fi
 
@@ -132,7 +132,7 @@ fi
 
 
 
-echo "###### start cni service####"
+echo $'\n#### start cni service####'
 if [ -f /run/containerd/containerd.sock ]; then
     echo "containerd service is alreay up, skipping..."
 else
@@ -142,7 +142,7 @@ else
 fi
 
 
-echo "####### Start kubelet service ########"
+echo $'\n#### Start kubelet service ####'
 ps -e |grep -v grep |grep kubelet > /dev/null
 if [ $? -eq 0 ]; then
     echo "kubelet service is alreay up, skipping..."
@@ -163,7 +163,7 @@ else
 
 fi
 
-echo "####### Start kube-proxy service ########"
+echo $'\n#### Start kube-proxy service ####'
 ps -e |grep -v grep |grep kube-proxy > /dev/null
 if [ $? -eq 0 ]; then
     echo "kube-proxy service is alreay up, skipping..."
@@ -182,10 +182,10 @@ else
 
 fi
 
-echo "####Setup flannel for pod networking####"
+echo $'\n####Setup flannel for pod networking####'
 kubectl get ds kube-flannel-ds -n kube-system
 if [ $? -eq 0 ]; then
-    echo "#### Flannel already deployed skipping#####"
+    echo " Flannel already deployed skipping"
 else
     if [ ! -f kube-flannel.yml ]; then
         curl -o kube-flannel.yml  -sSL https://rawgit.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
@@ -198,14 +198,14 @@ else
 fi
 
 if [ ! $MASTER_NODE ]; then
-    echo "##### Deploy one sample application #######"
+    echo $'\n#### Deploy one sample application ####'
     kubectl get deploy my-nginx
     if [ $? -eq 0 ]; then
-        echo "#### Sample app nginx already deployed skipping#####"
+        echo " Sample app nginx already deployed skipping####"
     else
 
         kubectl run my-nginx --image=nginx --replicas=2 --port=80
         kubectl expose deployment my-nginx --port=80
-    fi 
-    kubectl get svc my-nginx 
+    fi
+    kubectl get svc my-nginx
 fi
