@@ -1,6 +1,8 @@
 #!/bin/bash
-node=$(hostname) 
-node_ip=192.168.1.100
+
+instances=(sony-vaio worker-0)
+instances_ip=(192.168.1.101 192.168.1.20)
+
 mkdir -p configs
 cd configs
 cat > ca-config.json << EOF
@@ -93,16 +95,18 @@ else
     echo " skipping ${output}.pem"
 fi
 
-output=$node
+for i in {1..2}; do
+
+output=${instances[$i]}
 if [ ! -f ./${output}.pem ]; then
     echo "########   Preapre kubelet $output certificate ###########"
-    sed s/CN_VALUE/system:node:${node}/ csr-template.json | \
+    sed s/CN_VALUE/system:node:${instances[$i]}/ csr-template.json | \
         sed s/O_VLAUE/system:nodes/  > ${output}-csr.json
     cfssl gencert \
         -ca=ca.pem \
         -ca-key=ca-key.pem \
         -config=ca-config.json \
-        -hostname=${node},${node_ip} \
+        -hostname=${instances[$i]},${instances_ip[$i]} \
         -profile=kubernetes ${output}-csr.json | \
         cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
@@ -112,9 +116,6 @@ if [ ! -f ./${output}.pem ]; then
 else
     echo " skipping ${output}.pem"
 fi
-
-
-
 output=kubernetes
 if [ ! -f ./${output}.pem ]; then
     echo "########   Preapre kubernetes api server $output certificate ###########"
@@ -124,7 +125,7 @@ if [ ! -f ./${output}.pem ]; then
         -ca=ca.pem \
         -ca-key=ca-key.pem \
         -config=ca-config.json \
-        -hostname=10.32.0.1,${node_ip},127.0.0.1,kubernetes.default \
+        -hostname=10.32.0.1,${instances_ip[0]},${instances_ip[1]},127.0.0.1,kubernetes.default \
         -profile=kubernetes ${output}-csr.json | \
         cfssljson -bare ${output}
     if [ ! -f ./${output}.pem ]; then
@@ -134,6 +135,8 @@ if [ ! -f ./${output}.pem ]; then
 else
     echo " skipping ${output}.pem"
 fi
+
+done
 
 if [ ! -f encryption-config.yaml ]; then
     echo "######  Generate the data encryption key   #####"
