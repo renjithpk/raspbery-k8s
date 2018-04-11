@@ -4,21 +4,6 @@ NODE_NAME=$(hostname)
 NODE_IP=192.168.1.100
 MASTER_NODE=YES
 
-echo $'\n#### Copy Node service and config files'
-cp -P services/10-bridge.conf \
-    services/99-loopback.conf \
-    services/kubelet.service \
-    services/kube-proxy.service configs
-if [ $MASTER_NODE ]; then
-    cp -p services/kube-apiserver.service \
-        services/kube-controller-manager.service \
-        services/kube-apiserver-to-kubelet.yaml \
-        services/kube-apiserver-to-kubelet-bind.yaml \
-        services/kube-scheduler.service  \
-        services/etcd.service configs
-fi
-cd configs
-
 echo $'\n#### copy kubeconfig for kubectl ###'
 cp admin-config.kubeconfig ~/.kube/config
 

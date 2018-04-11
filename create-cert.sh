@@ -95,47 +95,45 @@ else
     echo " skipping ${output}.pem"
 fi
 
-for i in {1..2}; do
-
-output=${instances[$i]}
-if [ ! -f ./${output}.pem ]; then
-    echo "########   Preapre kubelet $output certificate ###########"
-    sed s/CN_VALUE/system:node:${instances[$i]}/ csr-template.json | \
-        sed s/O_VLAUE/system:nodes/  > ${output}-csr.json
-    cfssl gencert \
-        -ca=ca.pem \
-        -ca-key=ca-key.pem \
-        -config=ca-config.json \
-        -hostname=${instances[$i]},${instances_ip[$i]} \
-        -profile=kubernetes ${output}-csr.json | \
-        cfssljson -bare ${output}
+for i in {0..1}; do
+    output=${instances[$i]}
     if [ ! -f ./${output}.pem ]; then
-        echo "Failed to create $ouput certificate"
-        exit -1
+        echo "########   Preapre kubelet : $output certificate ###########"
+        sed s/CN_VALUE/system:node:${instances[$i]}/ csr-template.json | \
+            sed s/O_VLAUE/system:nodes/  > ${output}-csr.json
+        cfssl gencert \
+            -ca=ca.pem \
+            -ca-key=ca-key.pem \
+            -config=ca-config.json \
+            -hostname=${instances[$i]},${instances_ip[$i]} \
+            -profile=kubernetes ${output}-csr.json | \
+            cfssljson -bare ${output}
+        if [ ! -f ./${output}.pem ]; then
+            echo "Failed to create $ouput certificate"
+            exit -1
+        fi
+    else
+        echo " skipping ${output}.pem"
     fi
-else
-    echo " skipping ${output}.pem"
-fi
-output=kubernetes
-if [ ! -f ./${output}.pem ]; then
-    echo "########   Preapre kubernetes api server $output certificate ###########"
-    sed s/CN_VALUE/${output}/ csr-template.json | \
-        sed s/O_VLAUE/Kubernetes/  > ${output}-csr.json
-    cfssl gencert \
-        -ca=ca.pem \
-        -ca-key=ca-key.pem \
-        -config=ca-config.json \
-        -hostname=10.32.0.1,${instances_ip[0]},${instances_ip[1]},127.0.0.1,kubernetes.default \
-        -profile=kubernetes ${output}-csr.json | \
-        cfssljson -bare ${output}
+    output=kubernetes
     if [ ! -f ./${output}.pem ]; then
-        echo "Failed to create $ouput certificate"
-        exit -1
+        echo "########   Preapre kubernetes api server $output certificate ###########"
+        sed s/CN_VALUE/${output}/ csr-template.json | \
+            sed s/O_VLAUE/Kubernetes/  > ${output}-csr.json
+        cfssl gencert \
+            -ca=ca.pem \
+            -ca-key=ca-key.pem \
+            -config=ca-config.json \
+            -hostname=10.32.0.1,${instances_ip[0]},${instances_ip[1]},127.0.0.1,kubernetes.default \
+            -profile=kubernetes ${output}-csr.json | \
+            cfssljson -bare ${output}
+        if [ ! -f ./${output}.pem ]; then
+            echo "Failed to create $ouput certificate"
+            exit -1
+        fi
+    else
+        echo " skipping ${output}.pem"
     fi
-else
-    echo " skipping ${output}.pem"
-fi
-
 done
 
 if [ ! -f encryption-config.yaml ]; then
