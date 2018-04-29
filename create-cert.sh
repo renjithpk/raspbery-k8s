@@ -1,7 +1,7 @@
 #!/bin/bash
 
 instances=(sony-vaio worker-0)
-instances_ip=(192.168.1.101 192.168.1.20)
+instances_ip=(192.168.1.100 192.168.1.20)
 
 mkdir -p configs
 cd configs

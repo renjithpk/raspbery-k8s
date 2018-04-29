@@ -4,8 +4,16 @@ NODE_NAME=$(hostname)
 NODE_IP=192.168.1.100
 MASTER_NODE=YES
 
+if ! cd configs; then
+    echo "configs directory not present, run create-cert.sh first"
+    exit -1
+fi
+
 echo $'\n#### copy kubeconfig for kubectl ###'
-cp admin-config.kubeconfig ~/.kube/config
+if ! cp admin-config.kubeconfig ~/.kube/config; then
+    echo "Failed to configure kubectl"
+    exit -1
+fi
 
 if [ $MASTER_NODE ]; then
     echo $'\n#### Start ETCD service ##'
