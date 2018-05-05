@@ -41,6 +41,7 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 
 cleanup_files()
 {
+    set -x
     rm /usr/local/bin/cfssl*
 
     rm /usr/local/bin/etcd
@@ -88,7 +89,7 @@ cleanup_files()
         /etc/systemd/system/containerd.service \
         /etc/systemd/system/cri-containerd.service \
         /etc/crictl.yaml
-
+    set +x
 }
 
 

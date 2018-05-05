@@ -1,8 +1,5 @@
+. ./vars.sh
 
-MASTER_IP=192.168.1.100
-MASTER_HOSTNAME=sony-vaio
-HOSTNAME=$(hostname)
-MASTER_NODE=YES
 #scp ${instance}.kubeconfig kube-proxy.kubeconfig ${instance}:~/
 if [ $MASTER_NODE ]; then
     echo "### prepare services for MASTER node ###"
@@ -27,7 +24,7 @@ if [ ! -f configs/services ]; then
         sed -i s/MASTER_HOSTNAME/${MASTER_HOSTNAME}/g configs/etcd.service
         sed -i s/MASTER_IP/${MASTER_IP}/g configs/etcd.service
         sed -i s/MASTER_IP/${MASTER_IP}/g configs/kube-apiserver.service
-        sed -i s/HOSTNAME/${HOSTNAME}/g configs/kubelet.service
+        sed -i s/HOSTNAME/${NODE_NAME}/g configs/kubelet.service
     else
         echo "### Skipping masternode services ###"
     fi
@@ -36,23 +33,23 @@ fi
 
 cd configs
 
-echo "####### Generate kubelete kubeconfig file for $HOSTNAME node ########"
-rm ${HOSTNAME}.kubeconfig
+echo "####### Generate kubelete kubeconfig file for $NODE_NAME node ########"
+rm ${NODE_NAME}.kubeconfig
 kubectl config set-cluster kubernetes \
     --certificate-authority=ca.pem \
     --embed-certs=true \
     --server=https://${MASTER_IP}:6443 \
-    --kubeconfig=${HOSTNAME}.kubeconfig
-kubectl config set-credentials system:node:${HOSTNAME} \
-    --client-certificate=${HOSTNAME}.pem \
-    --client-key=${HOSTNAME}-key.pem \
+    --kubeconfig=${NODE_NAME}.kubeconfig
+kubectl config set-credentials system:node:${NODE_NAME} \
+    --client-certificate=${NODE_NAME}.pem \
+    --client-key=${NODE_NAME}-key.pem \
     --embed-certs=true \
-    --kubeconfig=${HOSTNAME}.kubeconfig
+    --kubeconfig=${NODE_NAME}.kubeconfig
 kubectl config set-context default \
     --cluster=kubernetes \
-    --user=system:node:${HOSTNAME} \
-    --kubeconfig=${HOSTNAME}.kubeconfig
-kubectl config use-context default --kubeconfig=${HOSTNAME}.kubeconfig
+    --user=system:node:${NODE_NAME} \
+    --kubeconfig=${NODE_NAME}.kubeconfig
+kubectl config use-context default --kubeconfig=${NODE_NAME}.kubeconfig
 
 
 echo "####### Generate the kubeconfig file for the kube-proxies  #####"

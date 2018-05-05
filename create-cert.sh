@@ -1,7 +1,8 @@
 #!/bin/bash
+. ./vars.sh
+echo ${INSTANCES[0]}
+echo ${INSTANCES[1]}
 
-instances=(sony-vaio worker-0)
-instances_ip=(192.168.1.100 192.168.1.20)
 
 mkdir -p configs
 cd configs
@@ -96,16 +97,17 @@ else
 fi
 
 for i in {0..1}; do
-    output=${instances[$i]}
+    echo $i
+    output=${INSTANCES[$i]}
     if [ ! -f ./${output}.pem ]; then
         echo "########   Preapre kubelet : $output certificate ###########"
-        sed s/CN_VALUE/system:node:${instances[$i]}/ csr-template.json | \
+        sed s/CN_VALUE/system:node:${INSTANCES[$i]}/ csr-template.json | \
             sed s/O_VLAUE/system:nodes/  > ${output}-csr.json
         cfssl gencert \
             -ca=ca.pem \
             -ca-key=ca-key.pem \
             -config=ca-config.json \
-            -hostname=${instances[$i]},${instances_ip[$i]} \
+            -hostname=${INSTANCES[$i]},${INSTANCES_IP[$i]} \
             -profile=kubernetes ${output}-csr.json | \
             cfssljson -bare ${output}
         if [ ! -f ./${output}.pem ]; then
@@ -124,7 +126,7 @@ for i in {0..1}; do
             -ca=ca.pem \
             -ca-key=ca-key.pem \
             -config=ca-config.json \
-            -hostname=10.32.0.1,${instances_ip[0]},${instances_ip[1]},127.0.0.1,kubernetes.default \
+            -hostname=10.32.0.1,${INSTANCES_IP[0]},${INSTANCES_IP[1]},127.0.0.1,kubernetes.default \
             -profile=kubernetes ${output}-csr.json | \
             cfssljson -bare ${output}
         if [ ! -f ./${output}.pem ]; then

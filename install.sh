@@ -1,8 +1,5 @@
 #!/bin/bash
-
-NODE_NAME=$(hostname)
-NODE_IP=192.168.1.100
-MASTER_NODE=YES
+. ./vars.sh
 
 if ! cd configs; then
     echo "configs directory not present, run create-cert.sh first"
