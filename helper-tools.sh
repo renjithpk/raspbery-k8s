@@ -4,6 +4,7 @@ POSITIONAL=()
 CLEANUP=NO
 STOP=NO
 STATUS=NO
+SCP=NO
 while [[ $# -gt 0 ]]
 do
 key="$1"
@@ -12,21 +13,31 @@ case $key in
     -c|--cleanup)
     CLEANUP=YES
     shift # past argument
-    #shift # past value
     ;;
     -s|--stop-services)
     STOP=YES
     shift # past argument
-    #shift # past value
     ;;
+
+    --hostname)
+    shift
+    NEW_HOSTNAME=$1
+    shift # past value
+    ;;
+
     --status)
     STATUS=YES
     shift # past argument
-    #shift # past value
     ;;
+
+    --scp)
+    SCP=YES
+    shift # past argument
+    ;;
+
     *)    # unknown option
     echo "Invalid option ${key}"
-    echo "helper-tools.sh [-c|--cleanup] [-s|--stop-services] [--status]"
+    echo "helper-tools.sh [-c|--cleanup] [-s|--stop-services] [--status] [--hostname]"
     POSITIONAL+=("$1") # save it in an array for later
     shift # past argument
     ;;
@@ -37,7 +48,27 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 
 
 
+set_hostname()
+{
+    set -x
+    hostnamectl set-hostname $NEW_HOSTNAME
+    #sysctl kernel.hostname
+    set +x
+}
 
+scp_configs()
+{
+    source vars.sh
+    set -x
+    for ip in ${INSTANCES_IP[@]:1}; do
+       cp vars.sh .vars_temp.sh
+       echo $ip;
+       sed -i '/export MASTER_NODE=YES/s/^/#/g' .vars_temp.sh
+       sed -i 's/export NODE_IP='${NODE_IP}'/export NODE_IP='${ip}'/' .vars_temp.sh
+       scp .vars_temp.sh root@$ip:/root/raspbery-k8s/vars.sh
+       scp -r configs root@$ip:/root/raspbery-k8s/configs
+    done
+}
 
 cleanup_files()
 {
@@ -111,3 +142,13 @@ if [ $STATUS == "YES" ]  ; then
         systemctl status --lines=0 --no-pager $svc
     done
 fi
+
+if [ $NEW_HOSTNAME ] ; then
+    echo "set new hostname $NEW_HOSTNAME"
+    set_hostname
+fi
+
+if [ $SCP == 'YES' ] ; then
+    echo "scp config file to worker nodes"
+    scp_configs    
+fi  
